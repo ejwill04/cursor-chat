@@ -3,7 +3,12 @@ import { useState } from 'react'
 import { Button } from '../ui/button'
 import { SessionManager } from './session-manager.tsx'
 
-export function TopNav() {
+interface TopNavProps {
+  onNewSession: () => void
+  onSelectSession: (sessionId: string) => void
+}
+
+export function TopNav({ onNewSession, onSelectSession }: TopNavProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -13,7 +18,12 @@ export function TopNav() {
           <Menu className="h-5 w-5" />
         </Button>
       </div>
-      <SessionManager open={isOpen} onOpenChange={setIsOpen} />
+      <SessionManager 
+        open={isOpen} 
+        onOpenChange={setIsOpen} 
+        onNewSession={onNewSession}
+        onSelectSession={onSelectSession}
+      />
     </nav>
   )
 } 
