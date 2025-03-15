@@ -3,7 +3,7 @@ import { Button } from '../ui/button'
 
 interface SessionListItemProps {
   id: string
-  firstMessage: string
+  title: string
   createdAt: string
   lastMessageAt: string
   onSelect: (id: string) => void
@@ -12,7 +12,7 @@ interface SessionListItemProps {
 
 export function SessionListItem({
   id,
-  firstMessage,
+  title,
   createdAt,
   lastMessageAt,
   onSelect,
@@ -25,7 +25,7 @@ export function SessionListItem({
     >
       <div className="flex flex-col flex-1 min-w-0 mr-2">
         <span className="font-medium truncate">
-          {firstMessage.slice(0, 30)}...
+          {title || 'New Chat'}
         </span>
         <div className="flex justify-between items-center text-sm text-muted-foreground">
           <span>{new Date(createdAt).toLocaleDateString()}</span>

@@ -19,7 +19,7 @@ export function SessionList({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <Loader2 className="h-6 w-6 animate-spin" data-testid="loading-spinner" />
       </div>
     )
   }
@@ -39,7 +39,7 @@ export function SessionList({
           <SessionListItem
             key={session.id}
             id={session.id}
-            firstMessage={session.messages[0]?.content || ''}
+            title={session.title || session.messages[0]?.content || 'New Chat'}
             createdAt={session.createdAt}
             lastMessageAt={session.messages[session.messages.length - 1]?.createdAt || session.createdAt}
             onSelect={onSelectSession}

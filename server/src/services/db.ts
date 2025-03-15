@@ -4,8 +4,13 @@ import type { ChatMessage } from '../types/chat'
 export const prisma = new PrismaClient()
 
 export async function createChat(messages: ChatMessage[]) {
+  // Find the first user message to use as the title
+  const firstUserMessage = messages.find(msg => msg.role === 'user')
+  const title = firstUserMessage?.content || 'New Chat'
+
   return prisma.chat.create({
     data: {
+      title: title.slice(0, 50), // Limit title length to 50 characters
       messages: {
         create: messages.map((msg) => ({
           content: msg.content,

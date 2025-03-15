@@ -8,6 +8,7 @@ export interface Message {
 
 export interface Session {
   id: string
+  title?: string
   createdAt: string
   messages: {
     id: string
