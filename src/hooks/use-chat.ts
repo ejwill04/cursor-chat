@@ -63,6 +63,17 @@ export function useChat(initialChatId?: string) {
     setNewMessage('')
     setIsLoading(true)
 
+    // Create a placeholder message for the assistant's response
+    const assistantMessageId = (Date.now() + 1).toString()
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      content: '',
+      sender: 'Assistant',
+      timestamp: new Date(),
+      isCurrentUser: false,
+    }
+    setMessages((prev) => [...prev, assistantMessage])
+
     try {
       const chatHistory = messages.map((msg) => ({
         role: msg.isCurrentUser ? ('user' as const) : ('assistant' as const),
@@ -70,32 +81,41 @@ export function useChat(initialChatId?: string) {
       }))
 
       chatHistory.push({ role: 'user' as const, content: newMessage })
-      const response = await getChatCompletion(chatHistory, chatId)
+
+      // Handle streaming updates
+      const handleChunk = (chunk: string) => {
+        setMessages((prev) => {
+          const lastMessage = prev[prev.length - 1]
+          if (lastMessage.id === assistantMessageId) {
+            return [
+              ...prev.slice(0, -1),
+              { ...lastMessage, content: lastMessage.content + chunk },
+            ]
+          }
+          return prev
+        })
+      }
+
+      const response = await getChatCompletion(chatHistory, chatId, handleChunk)
 
       if (!chatId) {
         setChatId(response.chatId)
       }
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: response.content,
-        sender: 'Assistant',
-        timestamp: new Date(),
-        isCurrentUser: false,
-      }
-
-      setMessages((prev) => [...prev, assistantMessage])
     } catch (error) {
       console.error('Failed to get AI response:', error)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content:
-          'I apologize, but I encountered an error. Please try again later.',
-        sender: 'Assistant',
-        timestamp: new Date(),
-        isCurrentUser: false,
-      }
-      setMessages((prev) => [...prev, errorMessage])
+      setMessages((prev) => {
+        const lastMessage = prev[prev.length - 1]
+        if (lastMessage.id === assistantMessageId) {
+          return [
+            ...prev.slice(0, -1),
+            {
+              ...lastMessage,
+              content: 'I apologize, but I encountered an error. Please try again later.',
+            },
+          ]
+        }
+        return prev
+      })
     } finally {
       setIsLoading(false)
     }

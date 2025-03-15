@@ -1,7 +1,7 @@
-import * as Prisma from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import type { ChatMessage } from '../types/chat'
 
-export const prisma = new Prisma.PrismaClient()
+export const prisma = new PrismaClient()
 
 export async function createChat(messages: ChatMessage[]) {
   return prisma.chat.create({
