@@ -1,10 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Chat } from './components/chat'
 import { TopNav } from './components/nav/top-nav'
 import { ThemeProvider } from './components/theme-provider'
 
 export default function App() {
   const [currentChatId, setCurrentChatId] = useState<string | undefined>()
+
+  useEffect(() => {
+    // Check for chat ID in URL search params on load
+    const url = new URL(window.location.href)
+    const chatId = url.searchParams.get('id')
+    if (chatId) {
+      setCurrentChatId(chatId)
+    }
+  }, [])
 
   const handleNewSession = () => {
     setCurrentChatId(undefined)
