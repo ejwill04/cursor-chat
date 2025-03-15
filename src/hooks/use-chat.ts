@@ -1,27 +1,36 @@
-import { getChatCompletion, getChatHistory } from '@/lib/api'
+import { getChatCompletion } from '@/lib/api'
 import { Message } from '@/types/chat'
 import { useEffect, useState } from 'react'
-
-const INITIAL_MESSAGE: Message = {
-  id: '1',
-  content: "Hello! I'm your AI assistant. How can I help you today?",
-  sender: 'Assistant',
-  timestamp: new Date(),
-  isCurrentUser: false,
-}
+import { INITIAL_MESSAGE, useChatQuery } from './use-chat-query'
 
 export function useChat(initialChatId?: string) {
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE])
+  const [localMessages, setLocalMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [chatId, setChatId] = useState<string | undefined>(initialChatId)
 
+  // Use TanStack Query to fetch chat data
+  const { data: chat } = useChatQuery(chatId)
+  const messages = chat?.messages ?? localMessages
+  
+  // Initialize local messages with INITIAL_MESSAGE when no chat data
+  useEffect(() => {
+    if (!chat?.messages && localMessages.length === 0) {
+      setLocalMessages([INITIAL_MESSAGE])
+    }
+  }, [chat?.messages, localMessages.length])
+
+  // Effect for handling initialChatId changes
   useEffect(() => {
     if (initialChatId) {
-      loadChatHistory(initialChatId)
+      setChatId(initialChatId)
+    } else {
+      setChatId(undefined)
+      setLocalMessages([INITIAL_MESSAGE])
     }
   }, [initialChatId])
 
+  // Effect for URL updates
   useEffect(() => {
     if (chatId) {
       const url = new URL(window.location.href)
@@ -29,24 +38,6 @@ export function useChat(initialChatId?: string) {
       window.history.pushState({}, '', url)
     }
   }, [chatId])
-
-  const loadChatHistory = async (id: string) => {
-    try {
-      const chat = await getChatHistory(id)
-      setChatId(id)
-      setMessages(
-        chat.messages.map((msg: any) => ({
-          id: msg.id,
-          content: msg.content,
-          sender: msg.role === 'user' ? 'You' : 'Assistant',
-          timestamp: new Date(msg.createdAt),
-          isCurrentUser: msg.role === 'user',
-        }))
-      )
-    } catch (error) {
-      console.error('Failed to load chat history:', error)
-    }
-  }
 
   const sendMessage = async () => {
     if (!newMessage.trim() || isLoading) return
@@ -59,7 +50,7 @@ export function useChat(initialChatId?: string) {
       isCurrentUser: true,
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    setLocalMessages((prev) => [...prev, userMessage])
     setNewMessage('')
     setIsLoading(true)
 
@@ -72,10 +63,10 @@ export function useChat(initialChatId?: string) {
       timestamp: new Date(),
       isCurrentUser: false,
     }
-    setMessages((prev) => [...prev, assistantMessage])
+    setLocalMessages((prev) => [...prev, assistantMessage])
 
     try {
-      const chatHistory = messages.map((msg) => ({
+      const chatHistory = messages.map((msg: Message) => ({
         role: msg.isCurrentUser ? ('user' as const) : ('assistant' as const),
         content: msg.content,
       }))
@@ -84,7 +75,7 @@ export function useChat(initialChatId?: string) {
 
       // Handle streaming updates
       const handleChunk = (chunk: string) => {
-        setMessages((prev) => {
+        setLocalMessages((prev) => {
           const lastMessage = prev[prev.length - 1]
           if (lastMessage.id === assistantMessageId) {
             return [
@@ -103,7 +94,7 @@ export function useChat(initialChatId?: string) {
       }
     } catch (error) {
       console.error('Failed to get AI response:', error)
-      setMessages((prev) => {
+      setLocalMessages((prev) => {
         const lastMessage = prev[prev.length - 1]
         if (lastMessage.id === assistantMessageId) {
           return [
